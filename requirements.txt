@@ -1,0 +1,13 @@
+# Core Framework & API
+fastapi
+uvicorn[standard]  # ASGI server with standard dependencies (websockets)
+
+# AI & Language Models
+langchain          
+langchain-openai   
+
+# Text-to-Speech (TTS)
+pyttsx3            # Offline text-to-speech library for local development
+
+# Utilities
+python-dotenv      #  managing environment variables 
