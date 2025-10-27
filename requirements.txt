@@ -4,7 +4,8 @@ uvicorn[standard]  # ASGI server with standard dependencies (websockets)
 
 # AI & Language Models
 langchain          
-langchain-openai   
+langchain-openai   # OpenAI alternative
+langchain-google-genai # Google alternative
 
 # Text-to-Speech (TTS)
 gtts               # Google Text-to-Speech library for online TTS
