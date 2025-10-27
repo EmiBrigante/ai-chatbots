@@ -7,7 +7,7 @@ langchain
 langchain-openai   
 
 # Text-to-Speech (TTS)
-pyttsx3            # Offline text-to-speech library for local development
+gtts               # Google Text-to-Speech library for online TTS
 
 # Utilities
 python-dotenv      #  managing environment variables 
