@@ -3,6 +3,8 @@ import fastapi
 from gtts import gTTS
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # TTS Test
 # tts = gTTS("Hello, world!", lang="en")
@@ -11,11 +13,12 @@ from pydantic import BaseModel
 # Initialize the FastAPI app
 app = fastapi.FastAPI()
 
-# Pydantic model for the request body
+# request body schema
 class TTSRequest(BaseModel):
     text: str
     lang: str = "en"
 
+# API endpoint for TTS
 @app.post("/text-to-speech/")
 async def text_to_speech(request: TTSRequest):
     """
