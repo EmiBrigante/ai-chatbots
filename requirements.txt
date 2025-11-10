@@ -9,6 +9,7 @@ langchain-google-genai # Google alternative
 
 # Text-to-Speech (TTS)
 gtts               # Google Text-to-Speech library for online TTS
+ollama             # Ollama library for local LLMs
 
 # Utilities
 python-dotenv      #  managing environment variables 

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi.responses import FileResponse
 from gtts import gTTS
-# Use APIRouter to group related endpoints
+# APIRouter to group related endpoints
 router = APIRouter(
     prefix="/tts",  # All routes in this file will start with /tts
     tags=["Text-to-Speech"] # This is for the API docs
