@@ -3,13 +3,11 @@ fastapi
 uvicorn[standard]  # ASGI server with standard dependencies (websockets)
 
 # AI & Language Models
-langchain          
-langchain-openai   # OpenAI alternative
-langchain-google-genai # Google alternative
+ollama             # Ollama library for local LLMs
 
 # Text-to-Speech (TTS)
 gtts               # Google Text-to-Speech library for online TTS
-ollama             # Ollama library for local LLMs
 
-# Utilities
-python-dotenv      #  managing environment variables 
+# Frontend
+streamlit          # Streamlit for building the web app
+requests           # For making HTTP requests between services

@@ -1,4 +1,4 @@
-from app.routers import tts, llm  # Import the TTS router
+from app.routers import tts, llm, chatbot  
 from fastapi import FastAPI
 import uvicorn
 
@@ -6,6 +6,7 @@ app = FastAPI()
 
 app.include_router(tts.router)
 app.include_router(llm.router)
+app.include_router(chatbot.router) 
 
 @app.get("/")
 def read_root():
