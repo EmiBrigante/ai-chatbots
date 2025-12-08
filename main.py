@@ -27,6 +27,9 @@ app.include_router(realtime.router)  # WebSocket for streaming
 # Serve frontend
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "frontend")
 
+# Mount static files (CSS, JS)
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 @app.get("/")
 def serve_frontend():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))

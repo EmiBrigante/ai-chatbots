@@ -23,7 +23,7 @@ router = APIRouter(
 
 # Load Whisper model (reuse from stt module or load here)
 # Using a smaller model for faster streaming
-stt_model = WhisperModel("base", device="auto", compute_type="auto")
+stt_model = WhisperModel("small", device="auto", compute_type="auto")
 
 # System prompt for concise responses
 SYSTEM_PROMPT = """You are a helpful voice assistant. Keep your responses brief and conversational - 
