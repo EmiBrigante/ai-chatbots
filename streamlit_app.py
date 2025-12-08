@@ -5,6 +5,8 @@ import queue
 import time
 import io
 import wave
+import html
+import json
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, AudioProcessorBase
 import av
 import torch
@@ -296,11 +298,12 @@ if ctx.audio_processor:
                     transcript = stt_response.json()["transcription"]
                     
                     if transcript.strip():
-                        # Show transcript
+                        # Show transcript (escape HTML to prevent XSS)
+                        safe_transcript = html.escape(transcript)
                         st.markdown(f'''
                         <div class="transcript-box">
                             <div class="transcript-label">📝 You said</div>
-                            {transcript}
+                            {safe_transcript}
                         </div>
                         ''', unsafe_allow_html=True)
                         
@@ -320,7 +323,9 @@ if ctx.audio_processor:
                             st.audio(audio_response, format="audio/mpeg", autoplay=True)
                             
                 except requests.exceptions.RequestException as e:
-                    st.error(f"❌ Error: {e}")
+                    st.error(f"❌ Network error: {e}")
+                except json.JSONDecodeError as e:
+                    st.error(f"❌ Invalid response from server: {e}")
             
             st.session_state.processing = False
             
