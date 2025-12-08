@@ -320,7 +320,7 @@ if ctx.audio_processor:
                             </div>
                             ''', unsafe_allow_html=True)
                             
-                            st.audio(audio_response, format="audio/mpeg", autoplay=True)
+                            st.audio(audio_response, format="audio/wav", autoplay=True)
                             
                 except requests.exceptions.RequestException as e:
                     st.error(f"❌ Network error: {e}")
@@ -342,6 +342,6 @@ if ctx.state.playing:
 # Footer
 st.markdown('''
 <div class="footer">
-    Powered by Ollama • Whisper • Silero VAD • gTTS
+    Powered by Ollama • Whisper • Silero VAD • Piper TTS
 </div>
 ''', unsafe_allow_html=True)

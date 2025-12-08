@@ -11,7 +11,6 @@ router = APIRouter(
 class ChatRequest(BaseModel):
     prompt: str
     model: str = "llama3.2:1b"
-    lang: str = "en"
 
 @router.post("/audio-response")
 async def audio_response(request: ChatRequest):
@@ -24,12 +23,12 @@ async def audio_response(request: ChatRequest):
         llm_result = await get_llm_response(llm_request_data)
         text_response = llm_result["response"]
 
-        # 2. Call the TTS function
-        tts_request_data = TTSRequest(text=text_response, lang=request.lang)
+        # 2. Call the TTS function (Piper TTS)
+        tts_request_data = TTSRequest(text=text_response)
         audio_bytes = await get_tts_audio_bytes(tts_request_data)
 
-        # 3. Return the audio content
-        return Response(content=audio_bytes, media_type="audio/mpeg")
+        # 3. Return the audio content (WAV format)
+        return Response(content=audio_bytes, media_type="audio/wav")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")

@@ -8,7 +8,7 @@ ollama             # Ollama library for local LLMs
 faster-whisper     # Fast Whisper implementation for speech-to-text
 
 # Text-to-Speech (TTS)
-gtts               # Google Text-to-Speech library for online TTS
+piper-tts          # Fast local neural TTS (replaces gTTS)
 
 # Frontend
 streamlit          # Streamlit for building the web app

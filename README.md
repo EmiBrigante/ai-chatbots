@@ -1,20 +1,20 @@
 # AI Voice Chatbot
 
-This project demonstrates a local AI Voice Chatbot that uses **Ollama** for text generation, **Whisper** for speech-to-text, and **gTTS** (Google Text-to-Speech) for voice output. It consists of a FastAPI backend and a Streamlit frontend.
+This project demonstrates a **fully local** AI Voice Chatbot that uses **Ollama** for text generation, **Whisper** for speech-to-text, and **Piper TTS** for fast neural voice output. It consists of a FastAPI backend and a Streamlit frontend.
 
 ## Features
 
 - **Local LLM**: Uses Ollama (running `llama3.2:1b` by default) for privacy and offline capability.
 - **Speech-to-Text**: Uses faster-whisper (`large-v3-turbo` model) for accurate speech recognition.
-- **Text-to-Speech**: Converts the AI's text response to audio using gTTS.
+- **Text-to-Speech**: Fast neural TTS using Piper (runs locally, no internet required).
 - **Voice Input**: Record your voice directly in the browser and get audio responses.
-- **Interactive UI**: Modern web interface built with Streamlit with dual input modes (voice/text).
+- **Interactive UI**: Modern web interface built with Streamlit with voice activity detection.
 
 ## Prerequisites
 
 1.  **Python 3.10+**
 2.  **Ollama**: [Download and install Ollama](https://ollama.com/download).
-3.  **Pull the Model**: Run the following command in your terminal to get the required model:
+3.  **Pull the LLM Model**: Run the following command in your terminal:
     ```bash
     ollama pull llama3.2:1b
     ```
@@ -30,6 +30,14 @@ This project demonstrates a local AI Voice Chatbot that uses **Ollama** for text
 3.  Install dependencies:
     ```bash
     pip install -r requirements.txt
+    ```
+4.  Download the Piper TTS voice model:
+    ```bash
+    mkdir -p models/piper
+    curl -L -o models/piper/en_US-amy-medium.onnx \
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx"
+    curl -L -o models/piper/en_US-amy-medium.onnx.json \
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx.json"
     ```
 
 ## Usage
