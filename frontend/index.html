@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 50%, #f5f0ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #1a1a2e;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d2d5a;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid #e0e4f2;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-label {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2d2d5a;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .text-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 1rem;
+            border: none;
+            background: #f8f9fc;
+            border-radius: 12px;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: #64748b;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .text-area:focus {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+        }
+
+        .transcript-area {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .response-area {
+            background: #faf5ff;
+            color: #6b21a8;
+        }
+
+        .info-text {
+            color: #6366f1;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .control-label {
+            font-weight: 500;
+            color: #2d2d5a;
+            font-size: 0.9rem;
+        }
+
+        select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e4f2;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            background: white;
+            color: #2d2d5a;
+            cursor: pointer;
+            min-width: 180px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #6366f1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #a5b4fc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #e0e4f2;
+            color: #64748b;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5eb;
+        }
+
+        .btn-recording {
+            background: #ef4444;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { opacity: 0.9; box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #2d2d5a;
+        }
+
+        .logs-section h3 {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2d2d5a;
+            margin-bottom: 0.75rem;
+        }
+
+        .logs-container {
+            background: #f8f9fc;
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #e0e4f2;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: #a5b4fc;
+            margin-right: 0.5rem;
+        }
+
+        .log-success {
+            color: #22c55e;
+        }
+
+        .log-error {
+            color: #ef4444;
+        }
+
+        .log-info {
+            color: #6366f1;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-ready {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .status-recording {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .status-processing {
+            background: #faf5ff;
+            color: #7c3aed;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .recording .status-dot {
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Voice AI Chat</h1>
+
+        <p class="info-text">
+            Click "Start Recording" to speak, then click "Stop" when finished. 
+            Your speech will be transcribed and the AI will respond with voice.
+        </p>
+
+        <!-- Transcript Card -->
+        <div class="card">
+            <label class="card-label">📝 Your Speech (Transcript)</label>
+            <div id="transcript" class="text-area transcript-area" readonly>
+                Your transcribed speech will appear here...
+            </div>
+        </div>
+
+        <!-- Response Card -->
+        <div class="card">
+            <label class="card-label">🤖 AI Response</label>
+            <div id="response" class="text-area response-area" readonly>
+                The AI response will appear here...
+            </div>
+            <audio id="audioPlayer" class="audio-player hidden" controls></audio>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-row">
+            <div class="control-group">
+                <span class="control-label">Model</span>
+                <select id="modelSelect">
+                    <option value="llama3.2:1b">llama3.2:1b (Fast)</option>
+                    <option value="llama3.2:3b">llama3.2:3b</option>
+                    <option value="llama3.1:8b">llama3.1:8b</option>
+                </select>
+            </div>
+            <div class="status-indicator status-ready" id="statusIndicator">
+                <span class="status-dot"></span>
+                <span id="statusText">Ready</span>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-group">
+            <button id="recordBtn" class="btn btn-primary">🎤 Start Recording</button>
+            <button id="clearBtn" class="btn btn-secondary">Clear</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat">
+                Recording Duration: <span class="stat-value" id="recordingDuration">0.00</span> s
+            </div>
+            <div class="stat">
+                Processing Time: <span class="stat-value" id="processingTime">0.00</span> s
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="logs-section">
+            <h3>Runtime Logs</h3>
+            <div id="logs" class="logs-container">
+                <div class="log-entry">
+                    <span class="log-time">[--:--:--]</span>
+                    <span class="log-info">Waiting for user input...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://127.0.0.1:8080';
+        const STT_URL = `${API_BASE}/stt/transcribe`;
+        const CHATBOT_URL = `${API_BASE}/chatbot/audio-response`;
+
+        // DOM Elements
+        const recordBtn = document.getElementById('recordBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const transcript = document.getElementById('transcript');
+        const response = document.getElementById('response');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const modelSelect = document.getElementById('modelSelect');
+        const recordingDuration = document.getElementById('recordingDuration');
+        const processingTime = document.getElementById('processingTime');
+        const logsContainer = document.getElementById('logs');
+
+        // State
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingStartTime = null;
+        let recordingTimer = null;
+
+        // Logging utility
+        function log(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">[${timeStr}]</span>
+                <span class="log-${type}">${message}</span>
+            `;
+            logsContainer.appendChild(entry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // Update status indicator
+        function setStatus(status, text) {
+            statusIndicator.className = `status-indicator status-${status}`;
+            if (status === 'recording') {
+                statusIndicator.classList.add('recording');
+            }
+            statusText.textContent = text;
+        }
+
+        // Initialize audio recording
+        async function initRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioChunks = [];
+                    await processAudio(audioBlob);
+                };
+
+                log('Microphone access granted', 'success');
+                return true;
+            } catch (error) {
+                log(`Microphone error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Start recording
+        async function startRecording() {
+            if (!mediaRecorder) {
+                const initialized = await initRecording();
+                if (!initialized) return;
+            }
+
+            audioChunks = [];
+            mediaRecorder.start();
+            isRecording = true;
+            recordingStartTime = Date.now();
+
+            recordBtn.textContent = '⏹️ Stop Recording';
+            recordBtn.classList.add('btn-recording');
+            setStatus('recording', 'Recording...');
+            log('Recording started', 'info');
+
+            // Update duration timer
+            recordingTimer = setInterval(() => {
+                const duration = (Date.now() - recordingStartTime) / 1000;
+                recordingDuration.textContent = duration.toFixed(2);
+            }, 100);
+        }
+
+        // Stop recording
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                clearInterval(recordingTimer);
+                mediaRecorder.stop();
+                isRecording = false;
+
+                recordBtn.textContent = '🎤 Start Recording';
+                recordBtn.classList.remove('btn-recording');
+                recordBtn.disabled = true;
+                setStatus('processing', 'Processing...');
+                log('Recording stopped, processing audio...', 'info');
+            }
+        }
+
+        // Process recorded audio
+        async function processAudio(audioBlob) {
+            const startTime = Date.now();
+
+            try {
+                // Step 1: Transcribe audio
+                log('Sending audio for transcription...', 'info');
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recording.wav');
+
+                const sttResponse = await fetch(STT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!sttResponse.ok) {
+                    throw new Error(`STT failed: ${sttResponse.status}`);
+                }
+
+                const sttData = await sttResponse.json();
+                const transcriptText = sttData.transcription;
+
+                transcript.textContent = transcriptText || '(No speech detected)';
+                log(`Transcription complete: "${transcriptText.substring(0, 50)}..."`, 'success');
+
+                if (!transcriptText.trim()) {
+                    setStatus('ready', 'Ready');
+                    recordBtn.disabled = false;
+                    log('No speech detected, please try again', 'error');
+                    return;
+                }
+
+                // Step 2: Get AI response with audio
+                log('Generating AI response...', 'info');
+                const chatResponse = await fetch(CHATBOT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: transcriptText,
+                        model: modelSelect.value
+                    })
+                });
+
+                if (!chatResponse.ok) {
+                    throw new Error(`Chat failed: ${chatResponse.status}`);
+                }
+
+                // Get the audio response
+                const audioResponseBlob = await chatResponse.blob();
+                const audioUrl = URL.createObjectURL(audioResponseBlob);
+
+                // For display, we need to get the text response separately
+                // Since our endpoint returns audio, we'll show a placeholder
+                response.textContent = '(Audio response generated - playing below)';
+                
+                audioPlayer.src = audioUrl;
+                audioPlayer.classList.remove('hidden');
+                audioPlayer.play();
+
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                processingTime.textContent = elapsed;
+                log(`Response generated in ${elapsed}s`, 'success');
+                setStatus('ready', 'Ready');
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                response.textContent = `Error: ${error.message}`;
+                setStatus('ready', 'Ready');
+            }
+
+            recordBtn.disabled = false;
+        }
+
+        // Clear everything
+        function clearAll() {
+            transcript.textContent = 'Your transcribed speech will appear here...';
+            response.textContent = 'The AI response will appear here...';
+            audioPlayer.classList.add('hidden');
+            audioPlayer.src = '';
+            recordingDuration.textContent = '0.00';
+            processingTime.textContent = '0.00';
+            logsContainer.innerHTML = `
+                <div class="log-entry">
+                    <span class="log-time">[--:--:--]</span>
+                    <span class="log-info">Cleared. Waiting for user input...</span>
+                </div>
+            `;
+            log('Session cleared', 'info');
+        }
+
+        // Event listeners
+        recordBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        clearBtn.addEventListener('click', clearAll);
+
+        // Initialize
+        log('Voice AI Chat initialized', 'success');
+        log('Click "Start Recording" to begin', 'info');
+    </script>
+</body>
+</html>
+

@@ -1,17 +1,38 @@
 from app.routers import tts, llm, chatbot, stt  
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import uvicorn
+import os
 
-app = FastAPI()
+app = FastAPI(title="Voice AI Chat API")
 
+# CORS middleware - allow frontend to call API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API routers
 app.include_router(tts.router)
 app.include_router(llm.router)
 app.include_router(chatbot.router)
 app.include_router(stt.router) 
 
+# Serve frontend
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "frontend")
+
 @app.get("/")
-def read_root():
-    return {"message": "Hello, World!"}
+def serve_frontend():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8080,)
+    uvicorn.run(app, host="127.0.0.1", port=8080)
