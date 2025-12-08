@@ -1,12 +1,14 @@
-# AI Chatbot
+# AI Voice Chatbot
 
-This project demonstrates a local AI Chatbot that uses **Ollama** for text generation and **gTTS** (Google Text-to-Speech) for voice output. It consists of a FastAPI backend and a Streamlit frontend.
+This project demonstrates a local AI Voice Chatbot that uses **Ollama** for text generation, **Whisper** for speech-to-text, and **gTTS** (Google Text-to-Speech) for voice output. It consists of a FastAPI backend and a Streamlit frontend.
 
 ## Features
 
 - **Local LLM**: Uses Ollama (running `llama3.2:1b` by default) for privacy and offline capability.
-- **Voice Response**: Converts the AI's text response to audio using gTTS.
-- **Interactive UI**: Simple web interface built with Streamlit.
+- **Speech-to-Text**: Uses faster-whisper (`large-v3-turbo` model) for accurate speech recognition.
+- **Text-to-Speech**: Converts the AI's text response to audio using gTTS.
+- **Voice Input**: Record your voice directly in the browser and get audio responses.
+- **Interactive UI**: Modern web interface built with Streamlit with dual input modes (voice/text).
 
 ## Prerequisites
 

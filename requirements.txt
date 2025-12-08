@@ -1,9 +1,11 @@
 # Core Framework & API
 fastapi
 uvicorn[standard]  # ASGI server with standard dependencies (websockets)
+python-multipart   # Required for file uploads in FastAPI
 
 # AI & Language Models
 ollama             # Ollama library for local LLMs
+faster-whisper     # Fast Whisper implementation for speech-to-text
 
 # Text-to-Speech (TTS)
 gtts               # Google Text-to-Speech library for online TTS
@@ -11,3 +13,9 @@ gtts               # Google Text-to-Speech library for online TTS
 # Frontend
 streamlit          # Streamlit for building the web app
 requests           # For making HTTP requests between services
+streamlit-webrtc   # Real-time audio/video streaming for Streamlit
+av                 # Audio/video processing (required by streamlit-webrtc)
+
+# Voice Activity Detection
+silero-vad         # Silero VAD for speech detection
+numpy              # Required for audio processing
