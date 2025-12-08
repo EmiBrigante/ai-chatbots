@@ -13,9 +13,4 @@ piper-tts          # Fast local neural TTS (replaces gTTS)
 # Frontend
 streamlit          # Streamlit for building the web app
 requests           # For making HTTP requests between services
-streamlit-webrtc   # Real-time audio/video streaming for Streamlit
-av                 # Audio/video processing (required by streamlit-webrtc)
-
-# Voice Activity Detection
-silero-vad         # Silero VAD for speech detection
-numpy              # Required for audio processing
+streamlit-audiorecorder  # Simple audio recording for Streamlit
