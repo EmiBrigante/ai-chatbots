@@ -80,6 +80,74 @@
             color: #6b21a8;
         }
 
+        /* Streaming text effect - blinking cursor */
+        .streaming {
+            position: relative;
+        }
+
+        .streaming::after {
+            content: '▋';
+            animation: blink-cursor 0.8s step-end infinite;
+            color: #6366f1;
+            font-weight: bold;
+        }
+
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Streaming indicator badge */
+        .streaming-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            animation: badge-pulse 1.5s ease-in-out infinite;
+        }
+
+        .streaming-badge.stt {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .streaming-badge.llm {
+            background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+        }
+
+        .streaming-badge.speaking {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); }
+        }
+
+        .streaming-dot {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            animation: dot-blink 1s ease-in-out infinite;
+        }
+
+        @keyframes dot-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Card label with streaming indicator */
+        .card-label {
+            display: flex;
+            align-items: center;
+        }
+
         .info-text {
             color: #6366f1;
             font-size: 0.85rem;
@@ -301,7 +369,13 @@
 
         <!-- Transcript Card -->
         <div class="card">
-            <label class="card-label">📝 Your Speech (Transcript)</label>
+            <label class="card-label">
+                📝 Your Speech (Transcript)
+                <span id="sttBadge" class="streaming-badge stt hidden">
+                    <span class="streaming-dot"></span>
+                    Transcribing...
+                </span>
+            </label>
             <div id="transcript" class="text-area transcript-area" readonly>
                 Your transcribed speech will appear here...
             </div>
@@ -309,7 +383,17 @@
 
         <!-- Response Card -->
         <div class="card">
-            <label class="card-label">🤖 AI Response</label>
+            <label class="card-label">
+                🤖 AI Response
+                <span id="llmBadge" class="streaming-badge llm hidden">
+                    <span class="streaming-dot"></span>
+                    Generating...
+                </span>
+                <span id="speakingBadge" class="streaming-badge speaking hidden">
+                    <span class="streaming-dot"></span>
+                    🔊 Speaking...
+                </span>
+            </label>
             <div id="response" class="text-area response-area" readonly>
                 The AI response will appear here...
             </div>
@@ -363,8 +447,8 @@
     <script>
         // Configuration
         const API_BASE = 'http://127.0.0.1:8080';
-        const STT_URL = `${API_BASE}/stt/transcribe`;
-        const CHATBOT_URL = `${API_BASE}/chatbot/audio-response`;
+        const WS_BASE = 'ws://127.0.0.1:8080';
+        const WS_VOICE_URL = `${WS_BASE}/ws/voice`;
 
         // DOM Elements
         const recordBtn = document.getElementById('recordBtn');
@@ -378,6 +462,9 @@
         const recordingDuration = document.getElementById('recordingDuration');
         const processingTime = document.getElementById('processingTime');
         const logsContainer = document.getElementById('logs');
+        const sttBadge = document.getElementById('sttBadge');
+        const llmBadge = document.getElementById('llmBadge');
+        const speakingBadge = document.getElementById('speakingBadge');
 
         // State
         let mediaRecorder = null;
@@ -385,6 +472,86 @@
         let isRecording = false;
         let recordingStartTime = null;
         let recordingTimer = null;
+        let websocket = null;
+        let pipelineResolve = null;
+        let processingStartTime = null;
+
+        // Audio queue for streaming TTS playback
+        let audioQueue = [];
+        let isPlayingAudio = false;
+        let currentAudioIndex = 0;
+
+        // Streaming visual effects
+        function startStreamingEffect(element, badge) {
+            element.classList.add('streaming');
+            badge.classList.remove('hidden');
+        }
+
+        function stopStreamingEffect(element, badge) {
+            element.classList.remove('streaming');
+            badge.classList.add('hidden');
+        }
+
+        // Audio queue management for streaming TTS
+        function addToAudioQueue(audioBase64, index, sentence) {
+            const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+            const audioBlob = new Blob([audioBytes], { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            
+            audioQueue.push({
+                url: audioUrl,
+                index: index,
+                sentence: sentence
+            });
+            
+            log(`Audio chunk ${index + 1} queued: "${sentence.substring(0, 30)}..."`, 'info');
+            
+            // Start playing if not already playing
+            if (!isPlayingAudio) {
+                playNextInQueue();
+            }
+        }
+
+        function playNextInQueue() {
+            if (audioQueue.length === 0) {
+                isPlayingAudio = false;
+                speakingBadge.classList.add('hidden');
+                return;
+            }
+            
+            isPlayingAudio = true;
+            speakingBadge.classList.remove('hidden');
+            const nextAudio = audioQueue.shift();
+            
+            audioPlayer.src = nextAudio.url;
+            audioPlayer.classList.remove('hidden');
+            
+            log(`▶ Playing chunk ${nextAudio.index + 1}: "${nextAudio.sentence.substring(0, 25)}..."`, 'success');
+            
+            audioPlayer.play().catch(err => {
+                log(`Audio play error: ${err.message}`, 'error');
+                playNextInQueue(); // Try next chunk
+            });
+        }
+
+        // Set up audio player to play next chunk when current finishes
+        audioPlayer.addEventListener('ended', () => {
+            playNextInQueue();
+        });
+
+        // Handle audio pause/stop
+        audioPlayer.addEventListener('pause', () => {
+            if (audioQueue.length === 0) {
+                speakingBadge.classList.add('hidden');
+            }
+        });
+
+        function resetAudioQueue() {
+            audioQueue = [];
+            isPlayingAudio = false;
+            currentAudioIndex = 0;
+            speakingBadge.classList.add('hidden');
+        }
 
         // Logging utility
         function log(message, type = 'info') {
@@ -407,6 +574,159 @@
                 statusIndicator.classList.add('recording');
             }
             statusText.textContent = text;
+        }
+
+        // WebSocket connection management
+        function connectWebSocket() {
+            return new Promise((resolve, reject) => {
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    resolve(websocket);
+                    return;
+                }
+
+                websocket = new WebSocket(WS_VOICE_URL);
+
+                websocket.onopen = () => {
+                    log('WebSocket connected (full streaming mode)', 'success');
+                    resolve(websocket);
+                };
+
+                websocket.onerror = (error) => {
+                    log('WebSocket error', 'error');
+                    reject(error);
+                };
+
+                websocket.onclose = () => {
+                    log('WebSocket disconnected', 'info');
+                    websocket = null;
+                };
+
+                websocket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+            });
+        }
+
+        // Handle incoming WebSocket messages - FULL STREAMING PIPELINE
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                // STT Streaming
+                case 'stt_start':
+                    transcript.textContent = '';
+                    startStreamingEffect(transcript, sttBadge);
+                    setStatus('processing', 'Transcribing...');
+                    log('Streaming transcription...', 'info');
+                    break;
+                
+                case 'stt_segment':
+                    // Append each segment as it arrives (streaming transcription!)
+                    transcript.textContent += data.content + ' ';
+                    log(`STT segment [${data.start.toFixed(1)}s-${data.end.toFixed(1)}s]: "${data.content}"`, 'info');
+                    break;
+                
+                case 'stt_done':
+                    stopStreamingEffect(transcript, sttBadge);
+                    transcript.textContent = data.full_transcript;
+                    log(`Transcription complete: ${data.full_transcript.length} chars`, 'success');
+                    break;
+                
+                // LLM Streaming
+                case 'llm_start':
+                    response.textContent = '';
+                    startStreamingEffect(response, llmBadge);
+                    setStatus('processing', 'Generating response...');
+                    log('Streaming LLM response...', 'info');
+                    break;
+                
+                case 'llm_token':
+                    // Append each token as it arrives (streaming effect)
+                    response.textContent += data.content;
+                    break;
+                
+                case 'llm_done':
+                    stopStreamingEffect(response, llmBadge);
+                    log(`LLM complete: ${data.full_response.length} chars`, 'success');
+                    break;
+                
+                // TTS Streaming
+                case 'tts_start':
+                    resetAudioQueue();
+                    setStatus('processing', 'Streaming audio...');
+                    log('🔊 Streaming TTS - audio will play as sentences complete!', 'info');
+                    break;
+                
+                case 'tts_chunk':
+                    // Add audio chunk to queue and start playing immediately
+                    addToAudioQueue(data.audio, data.index, data.sentence);
+                    break;
+                
+                case 'tts_done':
+                    // All audio chunks received
+                    log(`TTS complete: ${data.total_chunks} audio chunks generated`, 'success');
+                    break;
+                
+                // Pipeline complete
+                case 'pipeline_done':
+                    // Ensure all streaming effects are stopped
+                    stopStreamingEffect(transcript, sttBadge);
+                    stopStreamingEffect(response, llmBadge);
+                    
+                    const elapsed = ((Date.now() - processingStartTime) / 1000).toFixed(2);
+                    processingTime.textContent = elapsed;
+                    log(`Pipeline complete in ${elapsed}s`, 'success');
+                    setStatus('ready', 'Ready');
+                    recordBtn.disabled = false;
+                    
+                    if (pipelineResolve) {
+                        pipelineResolve(true);
+                        pipelineResolve = null;
+                    }
+                    break;
+                
+                // Error
+                case 'error':
+                    // Stop any streaming effects on error
+                    stopStreamingEffect(transcript, sttBadge);
+                    stopStreamingEffect(response, llmBadge);
+                    
+                    log(`Error: ${data.message}`, 'error');
+                    setStatus('ready', 'Ready');
+                    recordBtn.disabled = false;
+                    
+                    if (pipelineResolve) {
+                        pipelineResolve(false);
+                        pipelineResolve = null;
+                    }
+                    break;
+            }
+        }
+
+        // Send audio through the full streaming pipeline
+        async function runStreamingPipeline(audioBlob) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    await connectWebSocket();
+                    pipelineResolve = resolve;
+                    processingStartTime = Date.now();
+
+                    // Convert blob to base64
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64Audio = reader.result.split(',')[1];
+                        
+                        websocket.send(JSON.stringify({
+                            type: 'audio',
+                            data: base64Audio,
+                            model: modelSelect.value
+                        }));
+                    };
+                    reader.readAsDataURL(audioBlob);
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
         }
 
         // Initialize audio recording
@@ -470,85 +790,33 @@
                 recordBtn.classList.remove('btn-recording');
                 recordBtn.disabled = true;
                 setStatus('processing', 'Processing...');
-                log('Recording stopped, processing audio...', 'info');
+                log('Recording stopped, starting streaming pipeline...', 'info');
             }
         }
 
-        // Process recorded audio
+        // Process recorded audio through full streaming pipeline
         async function processAudio(audioBlob) {
-            const startTime = Date.now();
-
             try {
-                // Step 1: Transcribe audio
-                log('Sending audio for transcription...', 'info');
-                const formData = new FormData();
-                formData.append('file', audioBlob, 'recording.wav');
-
-                const sttResponse = await fetch(STT_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!sttResponse.ok) {
-                    throw new Error(`STT failed: ${sttResponse.status}`);
-                }
-
-                const sttData = await sttResponse.json();
-                const transcriptText = sttData.transcription;
-
-                transcript.textContent = transcriptText || '(No speech detected)';
-                log(`Transcription complete: "${transcriptText.substring(0, 50)}..."`, 'success');
-
-                if (!transcriptText.trim()) {
-                    setStatus('ready', 'Ready');
-                    recordBtn.disabled = false;
-                    log('No speech detected, please try again', 'error');
-                    return;
-                }
-
-                // Step 2: Get AI response with audio
-                log('Generating AI response...', 'info');
-                const chatResponse = await fetch(CHATBOT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: transcriptText,
-                        model: modelSelect.value
-                    })
-                });
-
-                if (!chatResponse.ok) {
-                    throw new Error(`Chat failed: ${chatResponse.status}`);
-                }
-
-                // Get the audio response
-                const audioResponseBlob = await chatResponse.blob();
-                const audioUrl = URL.createObjectURL(audioResponseBlob);
-
-                // For display, we need to get the text response separately
-                // Since our endpoint returns audio, we'll show a placeholder
-                response.textContent = '(Audio response generated - playing below)';
-                
-                audioPlayer.src = audioUrl;
-                audioPlayer.classList.remove('hidden');
-                audioPlayer.play();
-
-                const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-                processingTime.textContent = elapsed;
-                log(`Response generated in ${elapsed}s`, 'success');
-                setStatus('ready', 'Ready');
-
+                log('Sending audio to streaming pipeline...', 'info');
+                await runStreamingPipeline(audioBlob);
             } catch (error) {
-                log(`Error: ${error.message}`, 'error');
+                log(`Pipeline error: ${error.message}`, 'error');
                 response.textContent = `Error: ${error.message}`;
                 setStatus('ready', 'Ready');
+                recordBtn.disabled = false;
             }
-
-            recordBtn.disabled = false;
         }
 
         // Clear everything
         function clearAll() {
+            // Stop any streaming effects
+            stopStreamingEffect(transcript, sttBadge);
+            stopStreamingEffect(response, llmBadge);
+            
+            // Reset audio queue
+            resetAudioQueue();
+            audioPlayer.pause();
+            
             transcript.textContent = 'Your transcribed speech will appear here...';
             response.textContent = 'The AI response will appear here...';
             audioPlayer.classList.add('hidden');
@@ -576,8 +844,14 @@
         clearBtn.addEventListener('click', clearAll);
 
         // Initialize
-        log('Voice AI Chat initialized', 'success');
+        log('Voice AI Chat initialized (Streaming TTS Mode)', 'success');
+        log('🚀 Audio starts playing as sentences complete!', 'info');
         log('Click "Start Recording" to begin', 'info');
+        
+        // Pre-connect WebSocket for faster first response
+        connectWebSocket().catch(() => {
+            log('WebSocket pre-connect failed, will retry on first use', 'info');
+        });
     </script>
 </body>
 </html>

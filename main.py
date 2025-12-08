@@ -1,4 +1,4 @@
-from app.routers import tts, llm, chatbot, stt  
+from app.routers import tts, llm, chatbot, stt, realtime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,7 +21,8 @@ app.add_middleware(
 app.include_router(tts.router)
 app.include_router(llm.router)
 app.include_router(chatbot.router)
-app.include_router(stt.router) 
+app.include_router(stt.router)
+app.include_router(realtime.router)  # WebSocket for streaming 
 
 # Serve frontend
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "frontend")
