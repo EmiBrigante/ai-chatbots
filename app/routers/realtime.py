@@ -13,21 +13,15 @@ import json
 import tempfile
 import os
 import base64
-from faster_whisper import WhisperModel
+
+from ..config import SYSTEM_PROMPT, DEFAULT_MODEL
+from .stt import whisper_model  # Reuse the shared Whisper model
 from .tts import get_tts_audio_bytes, TTSRequest
 
 router = APIRouter(
     prefix="/ws",
     tags=["WebSocket"]
 )
-
-# Load Whisper model (reuse from stt module or load here)
-# Using a smaller model for faster streaming
-stt_model = WhisperModel("small", device="auto", compute_type="auto")
-
-# System prompt for concise responses
-SYSTEM_PROMPT = """You are a helpful voice assistant. Keep your responses brief and conversational - 
-aim for 1-2 sentences maximum. Be direct and avoid unnecessary details or filler words."""
 
 
 async def stream_transcription(websocket: WebSocket, audio_bytes: bytes):
@@ -39,8 +33,8 @@ async def stream_transcription(websocket: WebSocket, audio_bytes: bytes):
             tmp_file.write(audio_bytes)
             tmp_path = tmp_file.name
         
-        # Transcribe and stream segments
-        segments, info = stt_model.transcribe(tmp_path, beam_size=1)
+        # Transcribe and stream segments (use beam_size=1 for faster streaming)
+        segments, info = whisper_model.transcribe(tmp_path, beam_size=1)
         
         full_transcript = ""
         for segment in segments:
@@ -88,7 +82,7 @@ async def websocket_chat(websocket: WebSocket):
             
             if message.get("type") == "chat":
                 prompt = message.get("prompt", "")
-                model = message.get("model", "llama3.2:1b")
+                model = message.get("model", DEFAULT_MODEL)
                 
                 if not prompt.strip():
                     await websocket.send_json({
@@ -165,13 +159,6 @@ def is_sentence_end(text: str) -> bool:
     return text.endswith(('.', '!', '?', '。', '！', '？')) or text.endswith('.\n') or text.endswith('\n\n')
 
 
-async def generate_tts_chunk(text: str, chunk_index: int) -> tuple[int, bytes]:
-    """Generate TTS for a text chunk and return with index for ordering."""
-    tts_request = TTSRequest(text=text)
-    audio_bytes = await get_tts_audio_bytes(tts_request)
-    return chunk_index, audio_bytes
-
-
 @router.websocket("/voice")
 async def websocket_voice_pipeline(websocket: WebSocket):
     """
@@ -199,7 +186,7 @@ async def websocket_voice_pipeline(websocket: WebSocket):
             message = json.loads(data)
             
             if message.get("type") == "audio":
-                model = message.get("model", "llama3.2:1b")
+                model = message.get("model", DEFAULT_MODEL)
                 
                 try:
                     # Decode base64 audio

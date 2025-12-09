@@ -2,15 +2,17 @@ from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel
 from .llm import get_llm_response, LLMRequest
 from .tts import get_tts_audio_bytes, TTSRequest
+from ..config import DEFAULT_MODEL
 
 router = APIRouter(
     prefix="/chatbot",
     tags=["Chatbot"]
 )
 
+
 class ChatRequest(BaseModel):
     prompt: str
-    model: str = "llama3.2:1b"
+    model: str = DEFAULT_MODEL
 
 @router.post("/audio-response")
 async def audio_response(request: ChatRequest):
